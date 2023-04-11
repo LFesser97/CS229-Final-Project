@@ -6,7 +6,7 @@ from torch import nn
 from torch import optim
 from torch.autograd import grad
 
-from utilities import get_model
+from utilities import *
 
 # if torch.backends.mps.is_available():
 #     device = torch.device("mps")
@@ -53,8 +53,7 @@ def sample_dirichlet_boundary(n=100, ic_bc_ratio=0.8, t_range=[0, 1]):
 
     return torch.vstack((sample_ic_input, sample_bc_input)), torch.cat((sample_ic_u, sample_bc_u)).unsqueeze(dim=1)
 
-# model = get_model(2, 1, n_hidden=8, hidden_width=150)
-model = get_model(2, 1)
+model = get_model(2, 1, n_hidden=8, hidden_width=150)
 model.to(device)
 optimizer = optim.Adam(model.parameters())
 boundary_criterion = nn.MSELoss()
@@ -67,12 +66,12 @@ val_tx = torch.cartesian_prod(val_t, val_x)
 train_losses = []
 domain_losses = []
 boundary_losses = []
+counts = {1:0, 2:0, 3:0}
+domain_t, domain_x = sample_domain(n=3_000)
+boundary_pts, boundary_y = sample_dirichlet_boundary(n=1_000)
 
 for _ in tqdm.trange(10_000):
     # forward pass
-    domain_t, domain_x = sample_domain(n=3_000)
-    boundary_pts, boundary_y = sample_dirichlet_boundary(n=1_000)
-
     domain_preds = model(torch.stack((domain_t, domain_x), dim=1))
     boundary_preds = model(boundary_pts)
 
@@ -82,10 +81,43 @@ for _ in tqdm.trange(10_000):
     domain_loss = domain_criterion(f, torch.zeros_like(f))
     loss = domain_loss + boundary_loss
 
+    # DPM
+    epsilon = 0.001
+    delta = 0.01
+    w = 1.01
+
     optimizer.zero_grad()
-    loss.backward()
+    domain_loss.backward()
+    domain_grads = get_grads(model)
+    optimizer.zero_grad()
+    boundary_loss.backward()
+    boundary_grads = get_grads(model)
+    optimizer.zero_grad()
+
+    # print(domain_grads)
+    # for g in domain_grads: 
+        # print(g.shape)
+    if domain_loss <= epsilon:
+        set_grads(model, boundary_grads)
+        counts[1] += 1       
+    else: 
+        combined_grads = [x + y for (x, y) in zip(domain_grads, boundary_grads)]
+        if (domain_loss > epsilon) and (grad_dot(domain_grads, boundary_grads) >= 0):
+            set_grads(model, combined_grads)
+            counts[2] += 1       
+
+        else: 
+            set_grads(model, calc_dpm_grad(combined_grads, domain_grads, delta))
+            counts[3] += 1       
+    
+    if domain_loss - epsilon > 0: 
+        delta *= w
+    else: 
+        delta /= w
+
     optimizer.step()
 
+    # break 
     train_losses.append(loss.item())
     domain_losses.append(domain_loss.item())
     boundary_losses.append(boundary_loss.item())
@@ -94,12 +126,13 @@ plt.figure()
 plt.plot(train_losses, label="Overall", lw=1)
 plt.plot(domain_losses, label="Domain", lw=1)
 plt.plot(boundary_losses, label="Boundary", lw=1)
+plt.hlines(epsilon, 0, 10_000, color="k", linestyle="--")
 plt.xlabel("epoch")
 plt.ylabel("train loss")
 plt.legend()
-plt.savefig("loss.pdf")
+plt.savefig("dpm_loss.pdf")
 plt.yscale("log")
-plt.savefig("log_loss.pdf")
+plt.savefig("dpm_log_loss.pdf")
 
 with torch.no_grad(): 
     val_u = model(val_tx).squeeze().cpu().numpy()
@@ -108,8 +141,10 @@ plt.figure()
 im = plt.pcolormesh(val_t, val_x, val_u.reshape(len(val_t), len(val_x)).T, shading="nearest", cmap="Spectral")
 plt.colorbar(im)
 plt.tight_layout()
-plt.savefig("preds.pdf")
+plt.savefig("dpm_preds.pdf")
 
 plt.figure()
 plt.plot(val_x, val_u[:len(val_x)])
-plt.savefig("ic.pdf")
+plt.savefig("dpm_ic.pdf")
+
+print(counts)
