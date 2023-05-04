@@ -16,7 +16,9 @@
 
     
 - **Richard Qiu**:
-    - [...]
+    - Implemented PyTorch version of original PINN paper (Raissi+2017)
+    - Implemented DPM based on Kim+2020 
+    - Implemented transfer learning based on Desai+2021
 
 ### Contents of this repo:
 
