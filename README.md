@@ -9,7 +9,11 @@
     - [...]
     
 - **Lukas Fesser**:
-    - [...]
+    - Came up with the original project idea
+	- Implement the code for the experiments in section 3
+	- Suggested investigating the Fourier spectra of different PINN solutions
+	- Suggested and implemented the experiments on changes in the amplitude in section 4
+
     
 - **Richard Qiu**:
     - [...]
