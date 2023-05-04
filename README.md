@@ -8,7 +8,7 @@
 - **Luca D'Amico-Wong**:
     - Implemented Fourier analysis for all PDEs as described in section 4
     - Implemented Wasserstein-Fourier distance metric to analyze shfits in spectra and attempted to use these to predict L2 error (Cazelles+2020)
-    - Conducted additional experiments on training dynamics and extrapolation behavior
+    - Implemented spectral bias notebook (Rahaman+2019) and ran additional experiments to understand training dynamics
     - Wrote midterm report for project
     
 - **Lukas Fesser**:
