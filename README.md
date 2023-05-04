@@ -4,6 +4,16 @@
 
 - Luca d'Amico-Wong, Lukas Fesser, and Richard Qiu
 
+### Individual Contributions:
+- **Luca d'Amico-Wong**:
+    - [...]
+    
+- **Lukas Fesser**:
+    - [...]
+    
+- **Richard Qiu**:
+    - [...]
+
 ### Contents of this repo:
 
 - **deepxde_experiments**: contains the code for all the equations and experiments in sections 3 and 4. The individual notebooks contain comments/ instructions how to run them.
