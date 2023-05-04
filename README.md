@@ -2,11 +2,14 @@
 
 ## Understanding and Mitigating Extrapolation Failures in Physics-Informed Neural Networks
 
-- Luca d'Amico-Wong, Lukas Fesser, and Richard Qiu
+- Luca D'Amico-Wong, Lukas Fesser, and Richard Qiu
 
 ### Individual Contributions:
-- **Luca d'Amico-Wong**:
-    - [...]
+- **Luca D'Amico-Wong**:
+    - Implemented Fourier analysis for all PDEs as described in section 4
+    - Implemented Wasserstein-Fourier distance metric to analyze shfits in spectra and attempted to use these to predict L2 error (Cazelles+2020)
+    - Conducted additional experiments on training dynamics and extrapolation behavior
+    - Wrote midterm report for project
     
 - **Lukas Fesser**:
     - Came up with the original project idea
