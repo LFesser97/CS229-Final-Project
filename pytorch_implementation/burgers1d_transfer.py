@@ -11,7 +11,7 @@ from burgers1d import sample_domain, sample_dirichlet_boundary
 
 from utilities import get_model
 
-experiment_name = "burgers_halft_burgers_halft"
+experiment_name = "burgers_halft0.5_burgers_halft"
 
 # if torch.backends.mps.is_available():
 #     device = torch.device("mps")
@@ -64,6 +64,7 @@ def sample_dirichlet_boundary(n=100, ic_bc_ratio=0.8, t_range=[0, 1]):
 if __name__ == "__main__":
     # model = get_model(2, 1, n_hidden=8, hidden_width=150)
     viscosities = [0.01, 0.05, 0.1]
+    train_t_range = [0.5, 1.0]
     model = get_model(2, len(viscosities))
     model.to(device)
     optimizer = optim.Adam(model.parameters())
@@ -80,8 +81,8 @@ if __name__ == "__main__":
 
     for _ in tqdm.trange(10_000):
         # forward pass
-        domain_t, domain_x = sample_domain(n=3_000, t_range=[0, 0.5])
-        boundary_pts, boundary_y = sample_dirichlet_boundary(n=1_000, t_range=[0, 0.5])
+        domain_t, domain_x = sample_domain(n=3_000, t_range=train_t_range)
+        boundary_pts, boundary_y = sample_dirichlet_boundary(n=1_000, t_range=train_t_range)
 
         domain_preds = model(torch.stack((domain_t, domain_x), dim=1))
         boundary_preds = model(boundary_pts)
@@ -224,7 +225,10 @@ if __name__ == "__main__":
     with open(writeout_file, "a") as f: 
         f.write(f"{interp_domain_loss},{interp_boundary_loss},{interp_loss},{extrap_domain_loss},{extrap_boundary_loss},{extrap_loss}\n")
 
-
+    # save model 
+    with open(writeout_file, 'r') as f:
+        model_n = len(f.readlines())
+    torch.save(model.state_dict(), f"transfer_figs/{experiment_name}/model_weights_{model_n}.pth")
     
         
     
