@@ -53,63 +53,89 @@ def sample_dirichlet_boundary(n=100, ic_bc_ratio=0.8, t_range=[0, 1]):
 
     return torch.vstack((sample_ic_input, sample_bc_input)), torch.cat((sample_ic_u, sample_bc_u)).unsqueeze(dim=1)
 
-# model = get_model(2, 1, n_hidden=8, hidden_width=150)
-model = get_model(2, 1)
-model.to(device)
-optimizer = optim.Adam(model.parameters())
-boundary_criterion = nn.MSELoss()
-domain_criterion = nn.MSELoss()
+if __name__ == "__main__":
+    model = get_model(2, 1)
+    # model = get_model(2, 1, n_hidden=8, hidden_width=20, res=True)
+    model.to(device)
+    optimizer = optim.Adam(model.parameters())
+    boundary_criterion = nn.MSELoss()
+    domain_criterion = nn.MSELoss()
 
-val_t = torch.linspace(0, 1, 100, device=device)
-val_x = torch.linspace(-1, 1, 200, device=device)
-val_tx = torch.cartesian_prod(val_t, val_x)
+    val_t = torch.linspace(0, 1, 100, device=device)
+    val_x = torch.linspace(-1, 1, 200, device=device)
+    val_tx = torch.cartesian_prod(val_t, val_x)
 
-train_losses = []
-domain_losses = []
-boundary_losses = []
+    train_losses = []
+    domain_losses = []
+    boundary_losses = []
 
-for _ in tqdm.trange(10_000):
-    # forward pass
-    domain_t, domain_x = sample_domain(n=3_000)
-    boundary_pts, boundary_y = sample_dirichlet_boundary(n=1_000)
+    for _ in tqdm.trange(10_000):
+        # forward pass
+        domain_t, domain_x = sample_domain(n=3_000, t_range=[0, 0.5])
+        boundary_pts, boundary_y = sample_dirichlet_boundary(n=1_000, t_range=[0, 0.5])
 
+        domain_preds = model(torch.stack((domain_t, domain_x), dim=1))
+        boundary_preds = model(boundary_pts)
+
+        # backward pass
+        f = burgers1d_viscous_func(domain_preds, domain_t, domain_x)
+        boundary_loss = boundary_criterion(boundary_preds, boundary_y)
+        domain_loss = domain_criterion(f, torch.zeros_like(f))
+        loss = domain_loss + boundary_loss
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        train_losses.append(loss.item())
+        domain_losses.append(domain_loss.item())
+        boundary_losses.append(boundary_loss.item())
+
+    # Interpolation 
+    domain_t, domain_x = sample_domain(n=10_000, t_range=[0, 0.5])
+    boundary_pts, boundary_y = sample_dirichlet_boundary(n=10_000, t_range=[0, 0.5])
     domain_preds = model(torch.stack((domain_t, domain_x), dim=1))
     boundary_preds = model(boundary_pts)
 
-    # backward pass
     f = burgers1d_viscous_func(domain_preds, domain_t, domain_x)
-    boundary_loss = boundary_criterion(boundary_preds, boundary_y)
-    domain_loss = domain_criterion(f, torch.zeros_like(f))
-    loss = domain_loss + boundary_loss
+    interp_boundary_loss = boundary_criterion(boundary_preds, boundary_y)
+    interp_domain_loss = domain_criterion(f, torch.zeros_like(f))
+    interp_loss = interp_boundary_loss + interp_domain_loss
 
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+    # Extrapolation
+    domain_t, domain_x = sample_domain(n=10_000, t_range=[0.5, 1.0])
+    boundary_pts, boundary_y = sample_dirichlet_boundary(n=10_000, t_range=[0.5, 1.0])
+    domain_preds = model(torch.stack((domain_t, domain_x), dim=1))
+    boundary_preds = model(boundary_pts)
 
-    train_losses.append(loss.item())
-    domain_losses.append(domain_loss.item())
-    boundary_losses.append(boundary_loss.item())
+    f = burgers1d_viscous_func(domain_preds, domain_t, domain_x)
+    extrap_boundary_loss = boundary_criterion(boundary_preds, boundary_y)
+    extrap_domain_loss = domain_criterion(f, torch.zeros_like(f))
+    extrap_loss = extrap_boundary_loss + extrap_domain_loss
 
-plt.figure()
-plt.plot(train_losses, label="Overall", lw=1)
-plt.plot(domain_losses, label="Domain", lw=1)
-plt.plot(boundary_losses, label="Boundary", lw=1)
-plt.xlabel("epoch")
-plt.ylabel("train loss")
-plt.legend()
-plt.savefig("loss.pdf")
-plt.yscale("log")
-plt.savefig("log_loss.pdf")
+    with open("burgers_stdarch_halftrange_losses.csv", "a") as f: 
+        f.write(f"{interp_domain_loss},{interp_boundary_loss},{interp_loss},{extrap_domain_loss},{extrap_boundary_loss},{extrap_loss}\n")
 
-with torch.no_grad(): 
-    val_u = model(val_tx).squeeze().cpu().numpy()
+    # plt.figure()
+    # plt.plot(train_losses, label="Overall", lw=1)
+    # plt.plot(domain_losses, label="Domain", lw=1)
+    # plt.plot(boundary_losses, label="Boundary", lw=1)
+    # plt.xlabel("epoch")
+    # plt.ylabel("train loss")
+    # plt.legend()
+    # plt.savefig("halftrange_loss.pdf")
+    # plt.yscale("log")
+    # plt.savefig("halftrange_log_loss.pdf")
 
-plt.figure()
-im = plt.pcolormesh(val_t, val_x, val_u.reshape(len(val_t), len(val_x)).T, shading="nearest", cmap="Spectral")
-plt.colorbar(im)
-plt.tight_layout()
-plt.savefig("preds.pdf")
+    # with torch.no_grad(): 
+    #     val_u = model(val_tx).squeeze().cpu().numpy()
 
-plt.figure()
-plt.plot(val_x, val_u[:len(val_x)])
-plt.savefig("ic.pdf")
+    # plt.figure()
+    # im = plt.pcolormesh(val_t, val_x, val_u.reshape(len(val_t), len(val_x)).T, shading="nearest", cmap="Spectral")
+    # plt.colorbar(im)
+    # plt.tight_layout()
+    # plt.savefig("halftrange_preds.pdf")
+
+    # plt.figure()
+    # plt.plot(val_x, val_u[:len(val_x)])
+    # plt.savefig("halftrange_ic.pdf")
