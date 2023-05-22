@@ -113,9 +113,15 @@ if __name__ == "__main__":
     extrap_domain_loss = domain_criterion(f, torch.zeros_like(f))
     extrap_loss = extrap_boundary_loss + extrap_domain_loss
 
-    with open("burgers_stdarch_halftrange_losses.csv", "a") as f: 
+    with open("burgers_stdarch_halftrange/burgers_stdarch_halftrange_losses.csv", "a") as f: 
         f.write(f"{interp_domain_loss},{interp_boundary_loss},{interp_loss},{extrap_domain_loss},{extrap_boundary_loss},{extrap_loss}\n")
 
+    # save model 
+    with open("burgers_stdarch_halftrange/burgers_stdarch_halftrange_losses.csv", "r") as f: 
+        model_n = len(f.readlines())
+    torch.save(model.state_dict(), f"burgers_stdarch_halftrange/model_weights_{model_n}.pth")
+    
+        
     # plt.figure()
     # plt.plot(train_losses, label="Overall", lw=1)
     # plt.plot(domain_losses, label="Domain", lw=1)

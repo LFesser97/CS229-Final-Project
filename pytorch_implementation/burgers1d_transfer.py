@@ -11,7 +11,7 @@ from burgers1d import sample_domain, sample_dirichlet_boundary
 
 from utilities import get_model
 
-experiment_name = "burgers_halft0.5_burgers_halft"
+experiment_name = "burgers_fullt_burgers_halft"
 
 # if torch.backends.mps.is_available():
 #     device = torch.device("mps")
@@ -64,7 +64,7 @@ def sample_dirichlet_boundary(n=100, ic_bc_ratio=0.8, t_range=[0, 1]):
 if __name__ == "__main__":
     # model = get_model(2, 1, n_hidden=8, hidden_width=150)
     viscosities = [0.01, 0.05, 0.1]
-    train_t_range = [0.5, 1.0]
+    train_t_range = [0.0, 1.0]
     model = get_model(2, len(viscosities))
     model.to(device)
     optimizer = optim.Adam(model.parameters())
