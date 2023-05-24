@@ -13,7 +13,7 @@ import pickle
 
 # set up the problem
 
-K = 10
+K = 20
 
 def pde(x, y):
     dy_t = dde.grad.jacobian(y, x, i=0, j=1)
