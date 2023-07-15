@@ -24,6 +24,11 @@ def init_xavier(module):
         nn.init.xavier_normal_(module.weight)
 
 
+def init_glorot_normal(module):
+    if isinstance(module, nn.Linear):
+        nn.init.normal_(module.weight, mean=0, std=2/(module.in_features + module.out_features))
+
+
 def get_model(input_size, output_size, n_hidden=5, hidden_width=100, activation=nn.Tanh(), res=False):
     if res: 
         model = ResPINN(input_size, output_size, n_hidden, hidden_width, activation)
@@ -36,7 +41,8 @@ def get_model(input_size, output_size, n_hidden=5, hidden_width=100, activation=
         layers.append(nn.Linear(layer_dims[-1], output_size))
 
         model = nn.Sequential(*layers)
-        model.apply(init_xavier)
+        # model.apply(init_xavier)
+        model.apply(init_glorot_normal)
     
     return model
 
