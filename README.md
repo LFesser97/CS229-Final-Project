@@ -1,6 +1,6 @@
-# Understanding and Mitigating Extrapolation Failures in Physics-Informed Neural Networks
+# CS229 Final Project
 
-- This repository contains all the code for the experiments in the paper Understanding and Mitigating Extrapolation Failures in Physics-Informed Neural Networks.
+- This repository contains all the code for the experiments in the final project Understanding and Mitigating Extrapolation Failures in Physics-Informed Neural Networks.
 
 ## Contents of this repository:
 
